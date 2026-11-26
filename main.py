@@ -421,16 +421,27 @@ def main():
     page = build_page()
     data = encode_png(page)
     here = os.path.dirname(os.path.abspath(__file__))
-    out_here = os.path.join(here, "entry.png")
-    with open(out_here, "wb") as f:
-        f.write(data)
-    try:
-        os.makedirs("/output", exist_ok=True)
-        with open("/output/entry.png", "wb") as f:
-            f.write(data)
-    except OSError as exc:
-        print("note: could not write /output/entry.png:", exc)
-    print("wrote", out_here, len(data), "bytes")
+    targets = []
+    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR")
+    if out_dir:
+        targets.append(os.path.join(out_dir, "entry.png"))
+    targets.append(os.path.join(here, "entry.png"))
+    if os.path.isdir("/output"):
+        targets.append("/output/entry.png")
+    wrote = []
+    for path in targets:
+        try:
+            parent = os.path.dirname(path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(data)
+            wrote.append(path)
+        except OSError as exc:
+            print("note: could not write", path, ":", exc)
+    if not wrote:
+        raise SystemExit("could not write entry.png anywhere")
+    print("wrote", ", ".join(wrote), len(data), "bytes")
 
 
 if __name__ == "__main__":
